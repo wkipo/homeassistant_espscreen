@@ -12,7 +12,7 @@
 substitutions:
   # The branch of the components, as in the screen's own package (packages/<key>.yaml): the bridge carries the
   # screen's substitutions, so a screen of the dev channel builds its bridge from dev as well.
-  GITHUB_REF: "main"
+  GITHUB_REF: "elecrow-terminal-support"
 
 packages:
   build: !include hardware/esp-idf.yaml
@@ -20,7 +20,7 @@ packages:
 external_components:
   - source:
       type: git
-      url: https://github.com/MaxGramser/homeassistant_espscreen.git
+      url: https://github.com/wkipo/homeassistant_espscreen.git
       ref: ${GITHUB_REF}
       path: components
     refresh: 0s

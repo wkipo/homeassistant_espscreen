@@ -99,9 +99,9 @@ FULL_PAGE_MIN_FIRMWARE = (0, 2, 62)
 # Twenty tiles from firmware 0.2.7, ten before.
 TWENTY_TILES_MIN_FIRMWARE = (0, 2, 7)
 FIRST_MAX_TILES = 10
-REPO = 'https://github.com/MaxGramser/homeassistant_espscreen'
+REPO = 'https://github.com/wkipo/homeassistant_espscreen'
 # The branch a screen's YAML builds its board package from. Which boards there are is boards.json's (BOARD_KEYS).
-REF = 'main'
+REF = 'elecrow-terminal-support'
 # The app's channel (docs/RELEASING.md, "Testing dev"): the branch of this repository the app was added from. The
 # Supervisor names an app `<hash>_<slug>`, the hash being the first eight characters of the sha1 of the repository URL
 # as it was added, in lower case (supervisor/store/utils.py, get_hash_from_repository). So the URL with `#dev` is
