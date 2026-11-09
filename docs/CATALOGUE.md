@@ -236,3 +236,21 @@ through this app and compares with what that release stored and sent (`tests/fix
 every saved page loads, compiles to the same tiles, asks no newer firmware and keeps every setting, and a screen that
 is not updated gets what it got before, apart from a listed, intended fix. `web/tests/compat-0431.spec.ts` checks the
 editor loads the same pages. A change to the catalogue that breaks a saved layout fails these tests.
+
+### Heating presets on the climate card
+
+The expanded climate card forwards `preset_modes` and `preset_mode` from Home Assistant.
+For entities with `PRESET_MODE` support and the `heat` HVAC mode it shows the advertised
+Eco and Comfort presets, plus Off if `off` is an advertised HVAC mode. Boost and other
+presets remain available in Home Assistant. Fan and swing rows are retained.
+
+Eco and Comfort call `climate.set_preset_mode`; Off calls `climate.set_hvac_mode`.
+When off, choosing Eco or Comfort first requests `heat`, then waits for Home Assistant
+to report it before applying the preset, even if the old preset has the same name.
+A refused, timed-out or superseded heating request cancels the pending preset.
+Off takes precedence over a retained preset in the highlighted selection.
+
+Both the app (attribute forwarding) and screen firmware must be rebuilt. No entity
+ID is stored in these shortcuts. Native controls, layout and optimistic dependency
+tests cover selection, service mapping and sequencing; physical-screen testing is
+still required after installation.

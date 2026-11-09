@@ -348,7 +348,8 @@ inline void refresh_detail(unsigned index);
 // watch_call; defined with the wishes below.
 inline optimistic::Pool<6> wishes;
 inline lv_timer_t *wish_timer{};
-inline void wish_answered(const std::string &target, bool ok);
+inline optimistic::Wish *sending_wish{};  // watch_call binds its response id to this dispatch
+inline void wish_answered(const std::string &target, bool ok, uint32_t call_id);
 // A wish of the entity went out a while ago and Home Assistant has not squared it: its tile says "Updating..."
 // (docs/OPTIMISTIC.md), the one sign of a wait a wish shows.
 // A wish of the entity is still under way (ready to go out, or sent and not yet squared).
@@ -360,8 +361,9 @@ inline bool wish_slow(const std::string &entity, uint32_t now) {
   for (const auto &w : wishes.wishes) if (w.entity == entity && optimistic::slow(w, now)) return true;
   return false;
 }
-inline bool wish_unanswered(const std::string &target);
+inline bool wish_unanswered(const std::string &target, uint32_t call_id);
 inline void wish_revert(const optimistic::Wish &w, bool refused, bool unanswered, bool show = true);
+inline std::string wish_read(const Tile &t, optimistic::Field field, const std::string &item = "");
 inline void wish_run(optimistic::Wish &w, uint32_t now);
 inline void wish_refresh(const std::string &entity, bool card = true);
 // ---- Cards that paint themselves (docs/CARD_PARTS.md) ----
@@ -909,6 +911,7 @@ inline bool watch_call(esphome::api::HomeassistantActionRequest &request, const 
   const uint32_t id = ++last_id;
   *slot = {id, esphome::millis()};
   request.call_id = id;
+  if (sending_wish) sending_wish->call_id = id;
   const uint64_t session = transfer.lease, revision = transfer.revision;
   esphome::api::global_api_server->register_action_response_callback(id, [id, entity, session, revision](const esphome::api::ActionResponse &answer) {
     for (auto &c : watched_calls) if (c.id == id) c = {};
@@ -933,7 +936,7 @@ inline bool watch_call(esphome::api::HomeassistantActionRequest &request, const 
         t.unanswered = true;
         refresh_tile(i);
       }
-      silent = wish_unanswered(entity) || silent;
+      silent = wish_unanswered(entity, id) || silent;
       if (silent) ESP_LOGW("runtime_action", "Home Assistant neither answered nor acted on %s: may this screen perform actions?", entity.c_str());
       if (silent && !unanswered_told && hint_alert) {
         unanswered_told = true;
@@ -942,7 +945,7 @@ inline bool watch_call(esphome::api::HomeassistantActionRequest &request, const 
       return;
     }
     if (answer.is_success()) {
-      wish_answered(entity, true);
+      wish_answered(entity, true, id);
       // "It worked" without a new state (a stop on a cover that already stands still) ends the wait in a moment
       // instead of running to the cap.
       if (answer.is_success())
@@ -954,7 +957,7 @@ inline bool watch_call(esphome::api::HomeassistantActionRequest &request, const 
     ESP_LOGW("runtime_action", "Home Assistant refused the action for %s: %.*s", entity.c_str(),
              (int) answer.get_error_message().size(), answer.get_error_message().c_str());
     alarm_refused(entity);
-    wish_answered(entity, false);
+    wish_answered(entity, false, id);
     for (size_t i = 0; i < model.tiles.size(); ++i) if (model.tiles[i].entity == entity) {
       model.tiles[i].pending = false;
       model.tiles[i].release_slider();
@@ -1018,10 +1021,21 @@ inline bool action_template(const std::string &service, const std::string &entit
 // One wish's turn (docs/OPTIMISTIC.md): it goes out when it is ready, its old value comes back when Home Assistant
 // leaves it as it was, and a slow one says so. Run at a tap, at an answer, at a report and by the clock.
 inline void wish_run(optimistic::Wish &w, uint32_t now) {
+  if (w.dependency.enabled && w.phase == optimistic::Phase::READY) {
+    std::string shown;
+    for (size_t i = 0; i < model.count; ++i) if (model.tiles[i].entity == w.entity) {
+      shown = wish_read(model.tiles[i], w.dependency.field); break;
+    }
+    const auto gate = optimistic::dependency(w, wishes.find(w.entity, w.dependency.field), shown, now);
+    if (gate == optimistic::Outcome::REVERT) { wish_revert(w, false, false); return; }
+    if (gate == optimistic::Outcome::KEEP) return;
+  }
   switch (optimistic::tick(w, now)) {
     case optimistic::Outcome::SEND:
+      sending_wish = &w;
       optimistic::sent(w, w.rendered ? action_template(w.service, w.target, w.key, w.value, false, w.key2, w.value2)
                                      : action(w.service, w.target, w.key, w.value, true, w.key2, w.value2, false));
+      sending_wish = nullptr;
       break;
     case optimistic::Outcome::REVERT: wish_revert(w, false, false); break;
     default:
@@ -1343,7 +1357,7 @@ inline int preset_pending(const Tile &t) {
   return -1;
 }
 #endif
-inline std::string wish_read(const Tile &t, optimistic::Field field, const std::string &item = "") {
+inline std::string wish_read(const Tile &t, optimistic::Field field, const std::string &item) {
   using F = optimistic::Field;
   const auto &x = t.extra();
   const Lamp *lamp = wish_lamp(t, item);
@@ -1365,6 +1379,7 @@ inline std::string wish_read(const Tile &t, optimistic::Field field, const std::
     case F::ON_OFF: case F::OPTION: case F::HVAC_MODE: return t.state;
     case F::HUMIDIFIER_MODE: return x.humidifier_mode;
     case F::FAN_MODE: return x.fan_mode;
+    case F::CLIMATE_PRESET: return x.preset_mode;
     case F::SWING_MODE: return x.swing_mode;
     case F::ACTIVITY: return t.state == "on" ? x.activity : std::string();  // empty: the remote is off
     case F::PLAYING: return media_card::playing(t.state) ? "1" : "0";
@@ -1407,6 +1422,7 @@ inline void wish_write(Tile &t, optimistic::Field field, const std::string &valu
     case F::ON_OFF: case F::OPTION: case F::HVAC_MODE: t.state = value; break;
     case F::HUMIDIFIER_MODE: t.edit_extra().humidifier_mode = value; break;
     case F::FAN_MODE: t.edit_extra().fan_mode = value; break;
+    case F::CLIMATE_PRESET: t.edit_extra().preset_mode = value; break;
     case F::SWING_MODE: t.edit_extra().swing_mode = value; break;
     case F::ACTIVITY:
       if (value.empty()) t.state = "off";
@@ -1494,11 +1510,13 @@ inline void wish_watch(lv_timer_t *);
 // `rendered`: the action's value is one Home Assistant renders (a lamp's hs_color list).
 inline void wish(Tile &t, optimistic::Field field, const std::string &value, const std::string &service,
                  const std::string &key = "", const std::string &data = "", const std::string &target = "",
-                 const std::string &item = "", bool rendered = false, const std::string &key2 = "", const std::string &value2 = "") {
+                 const std::string &item = "", bool rendered = false, const std::string &key2 = "", const std::string &value2 = "",
+                 const optimistic::Dependency &dependency = {}) {
   if (!fresh() || !valid_entity(t.entity) || service.empty()) return;
   auto &w = wishes.slot(t.entity, field, item);
   optimistic::want(w, t.entity, !target.empty() ? target : !item.empty() ? item : t.entity, field, wish_read(t, field, item), value,
                    esphome::millis(), 0, item);
+  if (dependency.enabled) { w.dependency = dependency; w.force_send = true; }
   w.service = service; w.key = key; w.value = data; w.rendered = rendered; w.key2 = key2; w.value2 = value2;
   for (size_t i = 0; i < model.count; ++i) if (model.tiles[i].entity == t.entity) { model.tiles[i].refused_at = 0; model.tiles[i].unanswered = false; }
   ESP_LOGI("wish", "%s%s%s: '%s' (was '%s')", t.entity.c_str(), item.empty() ? "" : " ", item.c_str(), value.c_str(), w.before.c_str());
@@ -1522,13 +1540,13 @@ inline void wish_reported(Tile &t) {
                   outcome == optimistic::Outcome::DONE ? "" : " (not the wish)");
   }
 }
-inline void wish_answered(const std::string &target, bool ok) {
+inline void wish_answered(const std::string &target, bool ok, uint32_t call_id) {
   const uint32_t now = esphome::millis();
   for (auto &w : wishes.wishes) {
-    if (w.target != target) continue;
+    if (w.target != target || w.call_id != call_id) continue;
     if (optimistic::answer(w, ok, now) == optimistic::Outcome::REVERT) wish_revert(w, true, false);
-    else wish_run(w, now);  // a newer wish goes out now that this one is taken
   }
+  for (auto &w : wishes.wishes) if (w.target == target && w.live()) wish_run(w, now);
 }
 // On / off by the stand the tile shows, as Home Assistant's toggle (getToggleAction: turn_on or turn_off, never the
 // toggle action itself, so a burst sends what the last tap shows).
@@ -1718,10 +1736,10 @@ inline void key_press(Tile &t, int command, const std::string &arg = "") {
   if (w.field == optimistic::Field::HVAC_MODE) { climate_mode_wish(t, w.value); return; }
   wish(t, w.field, w.value, a.service, a.key, a.value, w.field == optimistic::Field::PLAYING ? media_entity(t) : std::string());
 }
-inline bool wish_unanswered(const std::string &target) {
+inline bool wish_unanswered(const std::string &target, uint32_t call_id) {
   bool any = false;
   for (auto &w : wishes.wishes) {
-    if (w.target != target) continue;
+    if (w.target != target || w.call_id != call_id) continue;
     const auto outcome = optimistic::unanswered(w);
     if (outcome == optimistic::Outcome::DONE) continue;
     any = true;
@@ -1942,7 +1960,7 @@ inline bool alarm_pad_open();
 // a thermostat's rows and the power keys.
 inline bool wish_command(int cmd){
   return cmd==20||cmd==23||cmd==25||cmd==26||(cmd>=SELECT_OPTION_FIRST&&cmd<SELECT_OPTION_FIRST+64)||
-         (cmd>=CLIMATE_MODE_FIRST&&cmd<CLIMATE_ROW_FIRST+12)||cmd==CLIMATE_POWER||cmd==LIGHT_POWER;
+         (cmd>=CLIMATE_MODE_FIRST&&cmd<CLIMATE_ROW_FIRST+18)||cmd==CLIMATE_POWER||cmd==LIGHT_POWER;
 }
 inline void detail_command(int cmd){
   // Back on the alarm's keypad goes back to its card; everywhere else it closes the card.
@@ -2035,7 +2053,7 @@ inline void detail_command(int cmd){
   if(cmd>=70 && cmd<130){if(t.domain()=="cover")cover_key(t,cmd-70);}
   if(cmd==40)action(t.state=="active"?"timer.pause":"timer.start",t.entity);
   if(cmd==41)action("timer.cancel",t.entity);
-  // The climate card: a mode (200-207), a fan or swing choice (210-221) and the power key (230). The card
+  // The climate card: a mode (200-207), a preset, fan or swing choice (210-227) and the power key (230). The card
   // shows the choice at once and waits for Home Assistant, like the vacuum card's chips.
   if(cmd>=CLIMATE_MODE_FIRST&&cmd<CLIMATE_MODE_FIRST+8){
     const auto modes=tile_controls::climate_modes(t);
@@ -2047,7 +2065,7 @@ inline void detail_command(int cmd){
     }
     return;
   }
-  if(cmd>=CLIMATE_ROW_FIRST&&cmd<CLIMATE_ROW_FIRST+12){
+  if(cmd>=CLIMATE_ROW_FIRST&&cmd<CLIMATE_ROW_FIRST+18){
     const auto rows=tile_controls::climate_rows(t);
     const unsigned r=(cmd-CLIMATE_ROW_FIRST)/6,i=(cmd-CLIMATE_ROW_FIRST)%6;
     if(r<rows.size()&&i<rows[r].values.size()&&rows[r].values[i]!=rows[r].current){
@@ -2055,7 +2073,19 @@ inline void detail_command(int cmd){
       const std::string value=rows[r].values[i];
       const auto a=tile_controls::climate_row_action(kind,value);
       using F=optimistic::Field;
-      wish(t,kind=='m'?F::HUMIDIFIER_MODE:kind=='f'?F::FAN_MODE:F::SWING_MODE,value,a.service,a.key,a.value);
+      if (kind == 'p') {
+        if (value == "off") {
+          climate_mode_wish(t, "off");
+        } else {
+          // A retained preset while off is not enough: heat may restore a different preset.
+          if (t.state == "off") climate_mode_wish(t, "heat");
+          const auto *mode = wishes.find(t.entity, F::HVAC_MODE);
+          const optimistic::Dependency after_heat{mode != nullptr && mode->want == "heat", F::HVAC_MODE, "heat"};
+          wish(t, F::CLIMATE_PRESET, value, a.service, a.key, a.value, "", "", false, "", "", after_heat);
+        }
+      } else {
+        wish(t,kind=='m'?F::HUMIDIFIER_MODE:kind=='f'?F::FAN_MODE:F::SWING_MODE,value,a.service,a.key,a.value);
+      }
     }
     return;
   }

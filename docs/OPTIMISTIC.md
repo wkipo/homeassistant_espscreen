@@ -122,6 +122,7 @@ A wish writes its value into the tile and paints every tile and the open card of
 |---|---|---|
 | `ON_OFF` | `on`, `off` | the state: lights, switches, input booleans, fans, automations, remotes, humidifiers |
 | `OPTION` | the option | the state: select, input_select |
+| `CLIMATE_PRESET` | the preset | `preset_mode`: climate |
 | `HVAC_MODE` | the mode | the state: climate (also `off` from the power key) |
 | `HUMIDIFIER_MODE` | the mode | the humidifier's `mode` attribute |
 | `FAN_MODE` | the fan mode | a thermostat's `fan_mode` |
@@ -218,3 +219,12 @@ The open and close keys of a cover without positions show only the way ("Opening
   tapped by hand, with the screen's log open. The paths that need Home Assistant to misbehave use template switches: one
   whose action fails (a refusal), one whose action does nothing (the two-second hold) and one whose action takes a few
   seconds (a slow device).
+
+A wish can depend on another field settling at a required value (`Dependency`).
+While that field has a live wish the dependent action stays ready; a different
+value, a superseding wish or the bounded timeout cancels it. After confirmation
+it is sent even when its old value matches, since the prerequisite may reset it.
+The climate preset uses this to resume heat before reapplying Eco or Comfort.
+
+Watched actions bind their response call ID to their wish. A late answer to the
+heating action cannot acknowledge or reject the preset action sent after it.

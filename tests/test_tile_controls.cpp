@@ -14,6 +14,38 @@ static Tile make(const char *entity, const char *state, uint32_t supported = 0) 
 }
 
 int main() {
+  // Heating shortcuts use the advertised presets, and Off wins over a retained preset.
+  {
+    Tile t = make("climate.room", "heat", tile_catalogue::climate::PRESET_MODE);
+    auto &x = t.edit_extra();
+    x.hvac_modes = R"(["heat","off"])";
+    x.preset_modes = R"(["boost","comfort","eco"])";
+    x.preset_mode = "comfort";
+    auto rows = climate_rows(t);
+    assert(rows.size() == 1 && rows[0].kind == 'p');
+    assert((rows[0].values == std::vector<std::string>{"eco", "comfort", "off"}));
+    assert((rows[0].labels == std::vector<std::string>{"Eco", "Comfort", "Off"}));
+    assert(rows[0].current == "comfort");
+    t.state = "off"; assert(climate_rows(t)[0].current == "off");
+    t.state = "unavailable"; assert(climate_rows(t)[0].current.empty());
+    t.state = "heat"; x.preset_mode = "boost";
+    assert(climate_rows(t)[0].current == "boost"); // no shortcut selected
+    x.fan_modes = R"(["auto","low"])"; x.swing_modes = R"(["off","on"])";
+    rows = climate_rows(t);
+    assert(rows.size() == 3 && rows[1].kind == 'f' && rows[2].kind == 's');
+    x.preset_modes = R"(["eco"])";
+    assert((climate_rows(t)[0].values == std::vector<std::string>{"eco", "off"}));
+    x.hvac_modes = R"(["heat"])";
+    assert((climate_rows(t)[0].values == std::vector<std::string>{"eco"}));
+    x.hvac_modes = R"(["cool","off"])"; assert(climate_rows(t).size() == 2);
+    x.hvac_modes = R"(["heat","off"])"; t.supported = 0; assert(climate_rows(t).size() == 2);
+    t.supported = tile_catalogue::climate::PRESET_MODE;
+    x.preset_modes = R"(["boost"])"; assert(climate_rows(t).size() == 2);
+    const auto eco = climate_row_action('p', "eco"), off = climate_row_action('p', "off");
+    assert(eco.service == "climate.set_preset_mode" && eco.key == "preset_mode" && eco.value == "eco");
+    assert(off.service == "climate.set_hvac_mode" && off.key == "hvac_mode" && off.value == "off");
+  }
+
   // -/+ steps snap to the entity's grid and stay inside its range.
   assert(step_value(20.0f, 0.5f, 16, 32, 1) == 20.5f);
   assert(step_value(20.3f, 0.5f, 16, 32, -1) == 20.0f);

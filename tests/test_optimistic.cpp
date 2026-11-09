@@ -10,6 +10,49 @@ static void tap(Wish &w, const char *entity, Field field, const std::string &sho
 }
 
 int main() {
+  // A retained preset must be reapplied after heat is confirmed, not merely displayed optimistically.
+  {
+    Wish heat, preset;
+    tap(heat, "climate.room", Field::HVAC_MODE, "off", "heat", 100);
+    assert(tick(heat, 100) == Outcome::SEND);
+    tap(preset, "climate.room", Field::CLIMATE_PRESET, "comfort", "comfort", 101);
+    preset.dependency = {true, Field::HVAC_MODE, "heat"}; preset.force_send = true;
+    assert(dependency(preset, &heat, "heat", 102) == Outcome::KEEP);
+    assert(answer(heat, true, 103) == Outcome::KEEP);
+    assert(dependency(preset, &heat, "heat", 104) == Outcome::KEEP);
+    assert(report(heat, "heat") == Outcome::DONE);
+    assert(dependency(preset, nullptr, "heat", 105) == Outcome::SEND);
+    assert(tick(preset, 105) == Outcome::SEND && preset.sent == "comfort");
+    assert(report(preset, "comfort") == Outcome::DONE);
+  }
+  // Failure, cancellation and a silent prerequisite never apply the preset.
+  for (int scenario = 0; scenario < 3; ++scenario) {
+    Wish heat, preset;
+    tap(heat, "climate.room", Field::HVAC_MODE, "off", "heat", 100);
+    tick(heat, 100);
+    tap(preset, "climate.room", Field::CLIMATE_PRESET, "comfort", "eco", 101);
+    preset.dependency = {true, Field::HVAC_MODE, "heat"}; preset.force_send = true;
+    if (scenario == 0) {
+      assert(answer(heat, false, 102) == Outcome::REVERT);
+      assert(dependency(preset, nullptr, "off", 103) == Outcome::REVERT);
+    } else if (scenario == 1) {
+      tap(heat, "climate.room", Field::HVAC_MODE, "heat", "off", 102);
+      assert(dependency(preset, &heat, "off", 103) == Outcome::REVERT);
+    } else {
+      assert(dependency(preset, &heat, "heat", 101 + WATCHED_CAP) == Outcome::REVERT);
+    }
+    assert(!preset.live() && tick(preset, 20000) != Outcome::SEND);
+  }
+  // Changing Eco to Comfort while waiting sends just the latest preset.
+  {
+    Wish preset;
+    tap(preset, "climate.room", Field::CLIMATE_PRESET, "boost", "eco", 100);
+    preset.dependency = {true, Field::HVAC_MODE, "heat"}; preset.force_send = true;
+    tap(preset, "climate.room", Field::CLIMATE_PRESET, "eco", "comfort", 101);
+    assert(dependency(preset, nullptr, "heat", 102) == Outcome::SEND);
+    assert(tick(preset, 102) == Outcome::SEND && preset.sent == "comfort");
+  }
+
   // A tap: the wish shows at once and goes out at once; Home Assistant's report of it ends it.
   {
     Wish w;

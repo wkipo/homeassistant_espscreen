@@ -513,6 +513,25 @@ inline std::vector<ClimateRow> climate_rows(const Tile &t) {
     rows.push_back(std::move(out));
     return rows;
   }
+  // Heating shortcuts: only the presets the entity advertises, with Off as an HVAC mode.
+  // Requiring heat keeps waking a cooling-only device out of these heating shortcuts.
+  const auto hvac = list_values(x.hvac_modes, 8);
+  const auto presets = list_values(x.preset_modes, 32);
+  auto has = [](const auto &values, const char *v) { return std::find(values.begin(), values.end(), v) != values.end(); };
+  if (t.domain() == "climate" && (t.supported & tile_catalogue::climate::PRESET_MODE) && has(hvac, "heat")) {
+    ClimateRow out;
+    out.kind = 'p';
+    out.icon = climate_mode_icon("heat");
+    for (const auto *value : {"eco", "comfort"}) if (has(presets, value)) {
+      out.values.emplace_back(value);
+      out.labels.push_back(humidifier_mode_text(value));
+    }
+    if (!out.values.empty()) {
+      if (has(hvac, "off")) { out.values.emplace_back("off"); out.labels.push_back(climate_mode_text("off")); }
+      out.current = !t.available() ? "" : t.state == "off" ? "off" : x.preset_mode;
+      rows.push_back(std::move(out));
+    }
+  }
   const struct { char kind; const char *icon; const std::string &modes; const std::string &current; } wanted[] = {
       {'f', glyph::FAN, x.fan_modes, x.fan_mode},
       {'s', "\U000F1C91", x.swing_modes, x.swing_mode},
@@ -532,6 +551,7 @@ inline std::vector<ClimateRow> climate_rows(const Tile &t) {
 }
 // What a tap on a row sends.
 inline Action climate_row_action(char kind, const std::string &value) {
+  if (kind == 'p') return value == "off" ? Action{"climate.set_hvac_mode", "hvac_mode", value} : Action{"climate.set_preset_mode", "preset_mode", value};
   if (kind == 'm') return {"humidifier.set_mode", "mode", value};
   if (kind == 'f') return {"climate.set_fan_mode", "fan_mode", value};
   return {"climate.set_swing_mode", "swing_mode", value};

@@ -45,6 +45,7 @@ enum class Field : uint8_t {
   ON_OFF,           // state "on" / "off": lights, switches, fans, automations, remotes, humidifiers
   OPTION,           // state = the option: select, input_select
   HVAC_MODE,        // state = the mode: climate
+  CLIMATE_PRESET,   // the climate preset_mode attribute
   HUMIDIFIER_MODE,  // the humidifier's mode attribute
   FAN_MODE,         // a thermostat's fan mode
   SWING_MODE,       // a thermostat's swing mode
@@ -85,11 +86,19 @@ enum class Outcome : uint8_t {
   REVERT,     // put `before` back (refused, unchanged after "it worked", or no answer)
 };
 
+// A dependent action waits for another field's wish to settle before it is sent.
+struct Dependency {
+  bool enabled = false;
+  Field field = Field::ON_OFF;
+  std::string value;
+};
 struct Wish {
   std::string entity;  // the tile's entity, whose reports square the wish
   std::string target;  // the entity the action goes to (a player's speaker), whose answers do
   Field field = Field::ON_OFF;
   std::string item;    // which part of the entity, for a field of a part (a lamp, a row); empty for the tile's own
+  Dependency dependency;
+  bool force_send = false;  // reapply after a prerequisite that may reset this field
   bool rendered = false;  // the action's value is one Home Assistant renders (a list such as hs_color)
   // `before`: what Home Assistant had before the action on its way; `sent`: what that action asks; `want`: the shown.
   std::string before, sent, want;
@@ -100,6 +109,7 @@ struct Wish {
   uint32_t quiet = 0;  // 0 for a choice; a step's rest before it goes out
   uint32_t changed_at = 0, sent_at = 0, answered_at = 0;
   bool refused = false;     // REVERT because Home Assistant said no: the tile says so
+  uint32_t call_id = 0;  // only the answer to this action may settle this wish
   bool watched = false;     // Home Assistant was asked to answer the action on its way
   bool slow_shown = false;  // its tile says it is still under way (slow())
   bool live() const { return phase == Phase::READY || phase == Phase::SENT; }
@@ -145,15 +155,29 @@ inline Outcome report(Wish &w, const std::string &reported) {
   return Outcome::CORRECTED;
 }
 
+inline Outcome dependency(Wish &w, const Wish *prior, const std::string &shown, uint32_t now) {
+  if (!w.dependency.enabled || w.phase != Phase::READY) return Outcome::SEND;
+  if (now - w.changed_at < WATCHED_CAP && prior && prior->live() && prior->want == w.dependency.value)
+    return Outcome::KEEP;
+  if ((prior && prior->live()) || shown != w.dependency.value || now - w.changed_at >= WATCHED_CAP) {
+    w.phase = Phase::IDLE;
+    return Outcome::REVERT;
+  }
+  w.dependency.enabled = false;
+  return Outcome::SEND;
+}
+
 // The clock: a wish ready to go out, a hold running out.
 inline Outcome tick(Wish &w, uint32_t now) {
   if (w.phase == Phase::READY) {
     if (w.quiet && now - w.changed_at < w.quiet) return Outcome::KEEP;
-    if (w.want == w.before) { w.phase = Phase::IDLE; return Outcome::DROP; }
+    if (!w.force_send && w.want == w.before) { w.phase = Phase::IDLE; return Outcome::DROP; }
+    w.force_send = false;
     w.phase = Phase::SENT;
     w.sent = w.want;
     w.sent_at = now;
     w.answered_at = 0;
+    w.call_id = 0;
     w.watched = false;  // the sender says (sent())
     w.slow_shown = false;
     return Outcome::SEND;

@@ -1043,6 +1043,7 @@ std::string receive(const std::string &payload) {
     }
     tile.modes = list(a["supported_color_modes"]);
     next.hvac_modes = list(a["hvac_modes"]);
+    next.preset_modes = list(a["preset_modes"]); next.preset_mode = string(a["preset_mode"], 48);
     next.fan_modes = list(a["fan_modes"]); next.swing_modes = list(a["swing_modes"]);
     next.fan_mode = string(a["fan_mode"], 48); next.swing_mode = string(a["swing_mode"], 48);
     next.target_low = number(a["target_temp_low"]); next.target_high = number(a["target_temp_high"]);

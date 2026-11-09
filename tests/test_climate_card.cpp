@@ -87,6 +87,23 @@ static Metrics dense_square() {
 }
 
 int main() {
+  // Elecrow 480x320: heating-only thermostat with one shortcut row.
+  {
+    Metrics m = guition();
+    ui::configure(165, "standard");
+    const int width = 480, top = 84, bottom = 320 - m.margin();
+    const auto l = layout(m, width, top, bottom, 1, 1);
+    sound(m, l, width, top, bottom);
+    assert(l.row_count == 1 && l.mode_count == 0);
+  }
+  // Presets keep both existing fan and swing rows on a full thermostat.
+  {
+    Metrics m = guition();
+    const auto l = layout(m, 451, 84, 462, 6, 3);
+    sound(m, l, 451, 84, 462);
+    assert(l.row_count == 3);
+  }
+
   // The Guition: the card it was designed on. Everything at its full size, in one column.
   {
     Metrics m = guition();
