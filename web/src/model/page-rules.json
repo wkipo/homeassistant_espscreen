@@ -167,7 +167,8 @@
     "climate": [
       "setpoint",
       "mode",
-      "setpoint_mode"
+      "setpoint_mode",
+      "setpoint_preset"
     ],
     "cover": [
       "buttons",

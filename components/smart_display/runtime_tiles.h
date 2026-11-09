@@ -1586,6 +1586,19 @@ inline void climate_mode_wish(Tile &t, const std::string &mode) {
   if (auto *x = t.extra_ptr()) x->hvac_action.clear();
   wish(t, optimistic::Field::HVAC_MODE, mode, "climate.set_hvac_mode", "hvac_mode", mode);
 }
+inline void climate_preset_wish(Tile &t, const std::string &value) {
+  using F = optimistic::Field;
+  const auto a = tile_controls::climate_row_action('p', value);
+  if (value == "off") {
+    climate_mode_wish(t, "off");
+  } else {
+    // A retained preset while off is not enough: heat may restore a different preset.
+    if (t.state == "off") climate_mode_wish(t, "heat");
+    const auto *mode = wishes.find(t.entity, F::HVAC_MODE);
+    const optimistic::Dependency after_heat{mode != nullptr && mode->want == "heat", F::HVAC_MODE, "heat"};
+    wish(t, F::CLIMATE_PRESET, value, a.service, a.key, a.value, "", "", false, "", "", after_heat);
+  }
+}
 // A thermostat's or humidifier's power key: off shows at once; on restores the mode Home Assistant remembers, which the
 // screen cannot know, so that one waits for it.
 inline void climate_power(Tile &t) {
@@ -2074,15 +2087,7 @@ inline void detail_command(int cmd){
       const auto a=tile_controls::climate_row_action(kind,value);
       using F=optimistic::Field;
       if (kind == 'p') {
-        if (value == "off") {
-          climate_mode_wish(t, "off");
-        } else {
-          // A retained preset while off is not enough: heat may restore a different preset.
-          if (t.state == "off") climate_mode_wish(t, "heat");
-          const auto *mode = wishes.find(t.entity, F::HVAC_MODE);
-          const optimistic::Dependency after_heat{mode != nullptr && mode->want == "heat", F::HVAC_MODE, "heat"};
-          wish(t, F::CLIMATE_PRESET, value, a.service, a.key, a.value, "", "", false, "", "", after_heat);
-        }
+        climate_preset_wish(t, value);
       } else {
         wish(t,kind=='m'?F::HUMIDIFIER_MODE:kind=='f'?F::FAN_MODE:F::SWING_MODE,value,a.service,a.key,a.value);
       }
@@ -8024,6 +8029,7 @@ inline void climate_mode_key_event(lv_event_t *e){
   if(n>=tile_controls::climate_bar_keys(t,keys,room))return;
   if(!allowed_wish(now,700+slot*8+n,"control "+std::to_string(slot)))return;
   if(keys[n].command==tile_controls::OPEN_CARD){active_index=w.index;show_detail(w.index);return;}
+  if(keys[n].command==tile_controls::CLIMATE_PRESET) { climate_preset_wish(t,keys[n].arg); return; }
   key_press(t,keys[n].command,keys[n].arg);
 }
 // One segment of a thermostat's mode bar: the mode's icon, its word where the bar has room, and the mode it is in
@@ -8038,7 +8044,7 @@ inline void mode_segment(lv_obj_t *&p,lv_obj_t *parent,unsigned code,climate_til
     lv_obj_add_event_cb(p,climate_mode_key_event,LV_EVENT_SHORT_CLICKED,(void*)(uintptr_t)code);
   }
   lv_obj_set_pos(p,r.x,r.y);lv_obj_set_size(p,r.w,r.h);lv_obj_remove_flag(p,LV_OBJ_FLAG_HIDDEN);
-  const bool mode=k.command==tile_controls::HVAC_MODE;
+  const bool mode=k.command==tile_controls::HVAC_MODE||k.command==tile_controls::CLIMATE_PRESET;
   lv_obj_set_style_bg_opa(p,k.checked?LV_OPA_COVER:LV_OPA_TRANSP,0);
   // A humidifier's mode has no colour of its own in Home Assistant: the one it is in takes the humidifier's blue.
   if(k.checked)set_color(p,LV_STYLE_BG_COLOR,lv_color_hex(theme::foreground(tile_controls::humidifier(t)?tile_controls::accent(t):tile_controls::mode_color(k.arg))));
@@ -8047,7 +8053,7 @@ inline void mode_segment(lv_obj_t *&p,lv_obj_t *parent,unsigned code,climate_til
   auto *icon=lv_obj_get_child(p,0),*word=lv_obj_get_child(p,1);
   set_font(icon,glyphs);label(icon,k.icon);set_color(icon,LV_STYLE_TEXT_COLOR,ink);
   const bool with_word=words&&mode;
-  const std::string name=with_word?tile_controls::thermostat_mode_text(t,k.arg):"";
+  const std::string name=with_word?tile_controls::climate_bar_text(t,k.arg):"";
   const int gh=lv_font_get_line_height(glyphs),space=ui::px(ui::large()?6:3),tw=with_word?text_width(name,text)+2:0;
   const int x0=(r.w-gh-(with_word?space+tw:0))/2;
   lv_obj_set_pos(icon,x0,(r.h-gh)/2);lv_obj_set_size(icon,gh,gh);lv_obj_set_style_text_align(icon,LV_TEXT_ALIGN_CENTER,0);
@@ -8072,8 +8078,8 @@ inline void draw_mode_bar(Widgets &w,const Tile &t,lv_obj_t *parent,lv_obj_t *&t
   const lv_font_t *glyphs=mini_icon_font?mini_icon_font:w.icon_font;
   bool words=count>0;
   for(unsigned n=0;n<count&&words;++n)
-    words=modes[n].command!=tile_controls::HVAC_MODE||seg[n].w>=lv_font_get_line_height(glyphs)+ui::px(large?26:14)+
-          text_width(tile_controls::thermostat_mode_text(t,modes[n].arg),w.value_font);
+    words=(modes[n].command!=tile_controls::HVAC_MODE&&modes[n].command!=tile_controls::CLIMATE_PRESET)||seg[n].w>=lv_font_get_line_height(glyphs)+ui::px(large?26:14)+
+          text_width(tile_controls::climate_bar_text(t,modes[n].arg),w.value_font);
   const unsigned slot=&w-widgets.data();
   const bool ready=fresh()&&t.available()&&!t.waiting(esphome::millis());
   for(unsigned n=0;n<(unsigned)CLIMATE_MODE_PARTS;++n){

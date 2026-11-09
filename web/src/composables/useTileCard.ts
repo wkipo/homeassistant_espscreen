@@ -20,7 +20,7 @@ import { cardHead, cardLook, cardPanel, cardRoom, iconFace, panelMetrics, pillFa
 import { dotted, textPx } from "../model/text-fit";
 import { tallCard, type Rect, type TallText } from "../model/tall-layout";
 import { clockText as trackTime, mediaLayout, mediaMetrics, mediaTop } from "../model/media-layout";
-import { barKeys } from "../model/tall-controls";
+import { barKeys, presetBarKeys } from "../model/tall-controls";
 import { levelShown, presetLit as presetLit_, presetSizes, presetsOf } from "../model/light-presets";
 import { bits } from "../model/catalogue";
 import theme from "virtual:esp-screens-theme";
@@ -228,7 +228,7 @@ export function useTileCard(props: TileCardProps) {
     const track = ["playing", "paused", "buffering"].includes(state) && !gone.value ? String(a.media_title || "") : "";
     return tallCard(doc.screenShape, look.value, r.width, r.height, {
       domain: domain.value, name: texts.name, line: texts.line, code: icon.value, controls, panel: Boolean(controls) && !gone.value,
-      keys: f.tallKeys.length, modes: f.thermostat ? barKeys(a, state, 6, domain.value).length : 0, bigKey: f.bigKey, action: f.tallAction, full: f.full, volume,
+      keys: f.tallKeys.length, modes: f.thermostat ? (f.tallControls === "setpoint_preset" ? presetBarKeys(a, 6) : barKeys(a, state, 6, domain.value)).length : 0, bigKey: f.bigKey, action: f.tallAction, full: f.full, volume,
       title: track, artist: mediaSubtitle(current.value), reading: texts.reading, now: texts.now,
       value: domain.value === "screen" || gone.value ? "" : tallValue(domain.value, current.value, texts.status, words.value), setpoint: texts.setpoint, widest: chip.value ? widestSetpoint(a) : undefined,
       runWidth: Math.ceil(textPx(texts.runText, look.value.sublabelBig, 400)),

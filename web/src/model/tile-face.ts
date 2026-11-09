@@ -102,7 +102,7 @@ export function drawnControls(domain: string, chosen: string | null, live: Live 
   const selected = drawn === "none" ? null : drawn;
   // A light's slider and presets on a card one row high is its presets alone (tile_controls::panel_kind).
   if (selected === "brightness_presets" && rows < 2) return "presets";
-  if (selected === "setpoint_mode" && rows < 2) return "setpoint";
+  if ((selected === "setpoint_mode" || selected === "setpoint_preset") && rows < 2) return "setpoint";
   if (selected === "volume_playback" && rows < 2) return "volume";
   if (domain !== "cover") return selected;
   const primary = coverPrimary(selected);
@@ -115,7 +115,7 @@ export function tileFace(input: FaceInput): Face {
   const state = live?.state || "", a = live?.a || {};
   const wide = input.wide && !full;
   const thermostat = domain === "climate" || domain === "humidifier";
-  const climateModes = thermostat && chosen === "setpoint_mode" && shape.rows > 1;
+  const climateModes = thermostat && (chosen === "setpoint_mode" || chosen === "setpoint_preset") && shape.rows > 1;
   const coverExtended = domain === "cover" && hasCoverTilt(chosen) && shape.rows > 1;
   const coverRow = domain === "cover" && !full && shape.rows === 1 && options?.inline !== "slider" && ["standard", "cover"].includes(display)
     && Boolean(chosen) && (hasCoverTilt(chosen) || (shape.columns === 1 && ["position", "buttons"].includes(chosen || "")));

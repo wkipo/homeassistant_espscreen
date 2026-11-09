@@ -234,3 +234,9 @@ behind the seam, the capability record, the audio owner), 4.1 (the cap three pla
 4.7 (what the PPA still turns), 4.10 (the governor), 4.11 (the own camera's tile) and 4.12 (pictures turned by the app)
 are built and described above; 3.2 has its second engine, the S3. Open: a second S3 tile (Wi-Fi buffers in PSRAM,
 measured against the panel bus), the D1001's video over Wi-Fi (4.8), the sensor's binned mode (4.6), the talk-back (5).
+
+Climate choice construction (`climate_controls.cpp`) is an out-of-line part of
+`tile_controls`: the same preset choices feed the tile and expanded card. Keeping
+these string/vector operations out of generated `main.cpp` avoids the Xtensa
+`l32r` literal-reach link failure. Native controls tests exercise this source, and
+the browser firmware build compiles the same object.

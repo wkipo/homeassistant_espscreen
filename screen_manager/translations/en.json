@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Temperature − / +",
           "mode": "Mode keys",
-          "setpoint_mode": "Temperature − / + and mode keys"
+          "setpoint_mode": "Temperature − / + and mode keys",
+          "setpoint_preset": "Temperature − / + and preset keys"
         },
         "switch": {
           "toggle": "On/off switch"

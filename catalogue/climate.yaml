@@ -29,3 +29,9 @@ controls:
     screen: {firmware: 0.3.1}
     one_row: setpoint
     fallback: mode
+  setpoint_preset:
+    needs: {actions: [climate.set_temperature, climate.set_preset_mode], features: [PRESET_MODE], attributes: [preset_modes]}
+    rows: 2
+    screen: {feature: climate_presets, else: setpoint}
+    one_row: setpoint
+    fallback: setpoint

@@ -254,3 +254,14 @@ Both the app (attribute forwarding) and screen firmware must be rebuilt. No enti
 ID is stored in these shortcuts. Native controls, layout and optimistic dependency
 tests cover selection, service mapping and sequencing; physical-screen testing is
 still required after installation.
+
+Choose **Temperature − / + and preset keys** under direct tile controls to put
+Eco, Comfort and Off below the temperature controls. Use a tile at least two rows
+high; a single-row tile keeps the temperature controls. Only advertised presets
+are included. If the bar cannot fit every shortcut, its last key opens the full
+card. Screens without the `climate_presets` hello feature receive the temperature
+controls until their firmware is upgraded.
+
+Climate choice construction is compiled separately in `climate_controls.cpp`,
+shared by tile keys and the expanded card. This removes the `climate_rows` literal
+pool from the large generated `main.cpp` object that failed to link on ESP32-S3.

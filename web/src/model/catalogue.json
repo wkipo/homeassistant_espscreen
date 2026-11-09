@@ -438,6 +438,32 @@
      ],
      "one_row": "setpoint",
      "fallback": "mode"
+    },
+    {
+     "key": "setpoint_preset",
+     "needs": {
+      "actions": [
+       {
+        "action": "climate.set_temperature"
+       },
+       {
+        "action": "climate.set_preset_mode"
+       }
+      ],
+      "features": [
+       "PRESET_MODE"
+      ],
+      "attributes": [
+       "preset_modes"
+      ]
+     },
+     "screen": {
+      "feature": "climate_presets",
+      "else": "setpoint"
+     },
+     "rows": 2,
+     "one_row": "setpoint",
+     "fallback": "setpoint"
     }
    ],
    "inline": null,

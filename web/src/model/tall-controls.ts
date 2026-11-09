@@ -50,6 +50,16 @@ export const thermostatMode = (domain: string, state: string, a: Attributes) => 
  * (the card) in the last place when they do not all fit, two modes rather than one and a "…" in a bar for two. None for
  * a device with fewer than two modes, or a bar with room for fewer than two. A humidifier's (firmware 0.42.0+) are its
  * available_modes in the order its integration lists them, the one in `mode` marked. */
+export function presetBarKeys(a: Attributes, room = 6): ControlKey[] {
+  if (!(Number(a.supported_features || 0) & bits('climate', 'PRESET_MODE')) || !a.hvac_modes?.includes('heat')) return [];
+  const values = ['eco', 'comfort'].filter(v => Array.isArray(a.preset_modes) && a.preset_modes.includes(v));
+  if (!values.length || room < 1) return [];
+  if (a.hvac_modes.includes('off')) values.push('off');
+  const more = values.length > room;
+  const keys: ControlKey[] = values.slice(0, more ? room - 1 : room).map(mode => ({mode, icon: mode === 'off' ? 'power' : '', cp: mode === 'off' ? 'F0425' : humidifierModeIcon(mode)}));
+  if (more) keys.push({icon: 'dots-horizontal'});
+  return keys;
+}
 export function barKeys(a: Attributes, state: string, room = 6, domain = 'climate'): ControlKey[] {
   const humidifier = domain === 'humidifier';
   const raw: unknown[] = Array.isArray(humidifier ? a.available_modes : a.hvac_modes) ? (humidifier ? a.available_modes : a.hvac_modes).slice(0, 8) : [];
@@ -84,7 +94,7 @@ export function availableControl(domain: string, kind: string | null, state: str
   if (kind === 'volume') return domain === 'media_player' && f & bits('media_player', 'VOLUME_SET', 'VOLUME_MUTE') ? kind : '';
   // A single temperature (feature 1) or a range with its chip (feature 2, firmware 0.19.0).
   // A humidifier's humidity between - and + (firmware 0.42.0+), whatever it reports.
-  if (kind === 'setpoint' || kind === 'setpoint_mode')
+  if (kind === 'setpoint' || (kind === 'setpoint_mode' || kind === 'setpoint_preset'))
     return domain === 'humidifier' || domain === 'climate' && (f & bits('climate', 'TARGET_TEMPERATURE') || (f & bits('climate', 'TARGET_TEMPERATURE_RANGE') && range)) ? kind : '';
   if (kind === 'stepper' || kind === 'slider') return ['number', 'input_number'].includes(domain) || kind === 'slider' && domain === 'humidifier' ? kind : '';
   if (kind === 'toggle') return ['light', 'switch', 'input_boolean', 'automation', 'remote', 'fan', 'humidifier'].includes(domain) ? kind : '';

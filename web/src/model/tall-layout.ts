@@ -217,7 +217,7 @@ export function tallCard(shape: Shape, look: CardLook, width: number, height: nu
     let pw: number, ph = keyH, slider: Rect | null = null, keys: Rect | null = null, dots: { x: number; y: number; size: number }[] | undefined;
     const isKeys = ["buttons", "playback", "volume_playback"].includes(kind) || (kind === "stepper" && input.domain.endsWith("select"));
     if (kind === "toggle") { pw = Math.min(width, 2 * keyH); }
-    else if (kind === "setpoint" || kind === "setpoint_mode" || (kind === "stepper" && !isKeys)) { pw = pill; ph = keyH + 2; }
+    else if (kind === "setpoint" || (kind === "setpoint_mode" || kind === "setpoint_preset") || (kind === "stepper" && !isKeys)) { pw = pill; ph = keyH + 2; }
     else if (kind === "mode") { pw = Math.min(pill, reach); }
     else if (kind === "run") pw = Math.max(div(keyW * 3, 2), (input.runWidth ?? 0) + 2 * px(large ? 22 : 14));
     else if (kind === "presets" || kind === "brightness_presets") {
@@ -248,12 +248,12 @@ export function tallCard(shape: Shape, look: CardLook, width: number, height: nu
     }
   }
   // A thermostat's -/+ and modes (climate_tile.h).
-  if ((input.domain === "climate" || input.domain === "humidifier") && out.panel && (kind === "setpoint" || kind === "setpoint_mode")) {
+  if ((input.domain === "climate" || input.domain === "humidifier") && out.panel && (kind === "setpoint" || (kind === "setpoint_mode" || kind === "setpoint_preset"))) {
     const target = input.widest ? `${input.widest}88` : input.setpoint || "";
     const faces: Face[] = [{ size: look.setpoint, weight: 400 }, { size: look.watch, weight: 500 }, { size: look.sublabelBig, weight: 400 }];
     const cm: ClimateMetrics = { large, touch: touchKey, gap, faceH: faces.map((f) => lineOf(f.size)), faceW: faces.map((f) => Math.ceil(textPx(target, f.size, f.weight)) + 2),
       captionH: stateH, maxWidth: reach, px };
-    const cl = climateLayout(cm, width, l.body.y, height, kind === "setpoint_mode" ? input.modes : 0);
+    const cl = climateLayout(cm, width, l.body.y, height, (kind === "setpoint_mode" || kind === "setpoint_preset") ? input.modes : 0);
     if (cl.form !== "none") {
       out.panel = null;
       out.climate = { ...cl, faceSize: faces[cl.face].size, faceWeight: faces[cl.face].weight, now: cl.caption ? input.now ?? "" : "" };

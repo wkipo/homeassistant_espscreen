@@ -516,7 +516,7 @@ def legacy_compatible(layout, grid):
                     and bar_items(page) == items for page in pages)
             and all(footprint_size(tile['placement']['columns'], tile['placement']['rows'], grid, tile['appearance'].get('presentation'))
                     not in ('tall', 'square') and not span_of(footprint_size(tile['placement']['columns'], tile['placement']['rows'], grid, tile['appearance'].get('presentation')))
-                    and tile['interaction'].get('controls') not in ('tilt', 'buttons_tilt', 'position_tilt', 'setpoint_mode', 'volume_playback')
+                    and tile['interaction'].get('controls') not in ('tilt', 'buttons_tilt', 'position_tilt', 'setpoint_mode', 'setpoint_preset', 'volume_playback')
                     and not tile.get('children')
                     for page in pages for tile in page['tiles']))
 

@@ -59,7 +59,8 @@ enum Command {
   HVAC_MODE, SELECT_PREVIOUS, SELECT_NEXT, RUN, TOGGLE, STEP_DOWN, STEP_UP,
   COVER_OPEN_TILT, COVER_STOP_TILT, COVER_CLOSE_TILT,
   OPEN_CARD,  // "…": the modes that did not fit are on the card (firmware 0.3.1+)
-  RANGE_SWITCH  // the chip between a range thermostat's - and +: heat or cool is the end they move (firmware 0.19.0)
+  RANGE_SWITCH,  // the chip between a range thermostat's - and +: heat or cool is the end they move (firmware 0.19.0)
+  CLIMATE_PRESET
 };
 struct Key { const char *icon = ""; int command = NONE; std::string arg; bool checked = false, disabled = false; };
 struct Action { std::string service, key, value; std::string key2 = {}, value2 = {}; bool valid() const { return !service.empty(); } };
@@ -90,7 +91,7 @@ inline bool cover_tilt_selected(const Tile &t) {
 }
 // A climate's second group (firmware 0.3.1+): the mode keys under the setpoint, where a taller card has the room.
 inline bool climate_modes_selected(const Tile &t) {
-  return thermostat(t) && t.controls=="setpoint_mode";
+  return thermostat(t) && (t.controls=="setpoint_mode" || t.controls=="setpoint_preset");
 }
 // A player's volume over its playback keys (Home Assistant's two media tile features stacked), where a taller card has
 // the room: the keys are its first group, the volume slider the second.
@@ -101,7 +102,7 @@ inline bool media_volume_selected(const Tile &t) {
 inline std::string panel_kind(const Tile &t) {
   auto c = t.controls, d = t.domain();
   if(d=="cover"){if(c=="tilt")return {};if(c=="buttons_tilt")return "buttons";if(c=="position_tilt")return "position";}
-  if((d=="climate"||d=="humidifier")&&c=="setpoint_mode")return "setpoint";
+  if((d=="climate"||d=="humidifier")&&(c=="setpoint_mode"||c=="setpoint_preset"))return "setpoint";
   if(d=="media_player"&&c=="volume_playback")return "playback";
   // A light's presets (module light_presets): with the slider over them on a card with a second row, else the keys alone.
   if(d=="light"&&c=="brightness_presets")return t.row_span()>1?c:"presets";
@@ -497,58 +498,8 @@ struct ClimateRow {
   std::vector<std::string> values, labels;
   std::string current;
 };
-inline std::vector<ClimateRow> climate_rows(const Tile &t) {
-  std::vector<ClimateRow> rows;
-  const auto &x = t.extra();
-  if (humidifier(t)) {
-    if (humidifier_named_modes(t)) return rows;
-    auto values = list_values(x.hvac_modes, 6);
-    if (values.size() < 2) return rows;
-    ClimateRow out;
-    out.kind = 'm';
-    out.icon = "\U000F058E";   // water-percent: the row is the humidifier's, whichever mode it is in
-    out.current = x.humidifier_mode;
-    for (const auto &value : values) out.labels.push_back(humidifier_mode_text(value));
-    out.values = std::move(values);
-    rows.push_back(std::move(out));
-    return rows;
-  }
-  // Heating shortcuts: only the presets the entity advertises, with Off as an HVAC mode.
-  // Requiring heat keeps waking a cooling-only device out of these heating shortcuts.
-  const auto hvac = list_values(x.hvac_modes, 8);
-  const auto presets = list_values(x.preset_modes, 32);
-  auto has = [](const auto &values, const char *v) { return std::find(values.begin(), values.end(), v) != values.end(); };
-  if (t.domain() == "climate" && (t.supported & tile_catalogue::climate::PRESET_MODE) && has(hvac, "heat")) {
-    ClimateRow out;
-    out.kind = 'p';
-    out.icon = climate_mode_icon("heat");
-    for (const auto *value : {"eco", "comfort"}) if (has(presets, value)) {
-      out.values.emplace_back(value);
-      out.labels.push_back(humidifier_mode_text(value));
-    }
-    if (!out.values.empty()) {
-      if (has(hvac, "off")) { out.values.emplace_back("off"); out.labels.push_back(climate_mode_text("off")); }
-      out.current = !t.available() ? "" : t.state == "off" ? "off" : x.preset_mode;
-      rows.push_back(std::move(out));
-    }
-  }
-  const struct { char kind; const char *icon; const std::string &modes; const std::string &current; } wanted[] = {
-      {'f', glyph::FAN, x.fan_modes, x.fan_mode},
-      {'s', "\U000F1C91", x.swing_modes, x.swing_mode},
-  };
-  for (const auto &row : wanted) {
-    auto values = list_values(row.modes, 6);
-    if (values.empty()) continue;
-    ClimateRow out;
-    out.kind = row.kind;
-    out.icon = row.icon;
-    out.current = row.current;
-    for (const auto &value : values) out.labels.push_back(climate_setting_text(row.kind, value));
-    out.values = std::move(values);
-    rows.push_back(std::move(out));
-  }
-  return rows;
-}
+ClimateRow climate_preset_row(const Tile &t);
+std::vector<ClimateRow> climate_rows(const Tile &t);
 // What a tap on a row sends.
 inline Action climate_row_action(char kind, const std::string &value) {
   if (kind == 'p') return value == "off" ? Action{"climate.set_hvac_mode", "hvac_mode", value} : Action{"climate.set_preset_mode", "preset_mode", value};
@@ -724,7 +675,24 @@ inline Action cover_position_action(const Tile &t,int raw,bool tilt) {
 // always among them. When the modes do not all fit, the last place is "…" and opens the card with every mode; a bar
 // with room for two shows two modes rather than one and a "…". A device with one mode has no bar: its circle is
 // all it needs.
+inline std::string climate_bar_text(const Tile &t, const std::string &value) {
+  return t.controls == "setpoint_preset" && value != "off" ? humidifier_mode_text(value) : thermostat_mode_text(t, value);
+}
 template <size_t N> inline unsigned climate_bar_keys(const Tile &t, std::array<Key, N> &out, unsigned room = N) {
+  if (t.domain() == "climate" && t.controls == "setpoint_preset") {
+    const auto preset = climate_preset_row(t);
+    room = std::min<unsigned>(room, N);
+    if (preset.values.empty() || room == 0) return 0;
+    const bool more = preset.values.size() > room;
+    const unsigned count = more ? room - 1 : preset.values.size();
+    for (unsigned i = 0; i < count; ++i) {
+      const auto &v = preset.values[i];
+      out[i] = Key{v == "off" ? glyph::POWER : humidifier_mode_icon(v), CLIMATE_PRESET, v, v == preset.current, false};
+    }
+    if (more) out[count] = Key{glyph::MORE, OPEN_CARD, "", false, false};
+    return count + more;
+  }
+
   static const char *const ORDER[] = {"heat", "cool", "heat_cool", "auto", "dry", "fan_only"};
   room = std::min<unsigned>(room, N);
   std::vector<std::string> modes;
@@ -838,6 +806,7 @@ inline Action key_action(const Tile &t, int command, const std::string &arg = ""
     case TIMER_START: return {"timer.start", "", ""};
     case TIMER_PAUSE: return {"timer.pause", "", ""};
     case TIMER_CANCEL: return {"timer.cancel", "", ""};
+    case CLIMATE_PRESET: return arg.empty() ? Action{} : climate_row_action('p', arg);
     case HVAC_MODE:
       if (arg.empty()) return {};
       return d == "humidifier" ? Action{"humidifier.set_mode", "mode", arg} : Action{"climate.set_hvac_mode", "hvac_mode", arg};

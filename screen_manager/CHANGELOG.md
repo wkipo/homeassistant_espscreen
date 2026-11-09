@@ -1,6 +1,12 @@
-## Unreleased
+## 0.4.98-elecrow.2
+
+- Fix the ESP32-S3 climate-row literal relocation link failure by compiling climate choices separately. Add Temperature − / + and preset keys to direct tile controls, with Eco, Comfort and Off, matching the expanded card.
 
 - Climate cards offer Eco, Comfort and Off shortcuts for heating thermostats that advertise those presets. Choosing a preset from Off waits for heating to resume before applying it.
+
+Rebuild and install the screen firmware after updating the app to enable preset keys and apply the linker fix.
+
+## 0.4.98-elecrow.1
 
 - Experimental Elecrow ESP Terminal DLC35010R support: 16-bit parallel ILI9488, FT6236 touch, PWM backlight and onboard buzzer. Hardware acceptance pending.
 

@@ -2685,6 +2685,17 @@
 "tile": {
 "entity": "climate.case",
 "options": {
+"controls": "setpoint_preset",
+"size": "single"
+}
+}
+},
+{
+"expect": null,
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
 "controls": "none",
 "size": "single"
 }
@@ -2756,6 +2767,17 @@
 }
 },
 {
+"expect": "setpoint",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
+"size": "wide"
+}
+}
+},
+{
 "expect": null,
 "kind": "resolve",
 "tile": {
@@ -2832,6 +2854,17 @@
 }
 },
 {
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
+"size": "tall"
+}
+}
+},
+{
 "expect": null,
 "kind": "resolve",
 "tile": {
@@ -2908,6 +2941,17 @@
 }
 },
 {
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
+"size": "square"
+}
+}
+},
+{
 "expect": null,
 "kind": "resolve",
 "tile": {
@@ -2984,6 +3028,17 @@
 }
 },
 {
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
+"size": "full"
+}
+}
+},
+{
 "expect": null,
 "kind": "resolve",
 "tile": {
@@ -3065,6 +3120,17 @@
 "tile": {
 "entity": "climate.case",
 "options": {
+"controls": "setpoint_preset",
+"size": "1x1"
+}
+}
+},
+{
+"expect": null,
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
 "controls": "none",
 "size": "1x1"
 }
@@ -3136,6 +3202,17 @@
 }
 },
 {
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
+"size": "1x3"
+}
+}
+},
+{
 "expect": null,
 "kind": "resolve",
 "tile": {
@@ -3207,6 +3284,17 @@
 "entity": "climate.case",
 "options": {
 "controls": "setpoint_mode",
+"size": "3x1"
+}
+}
+},
+{
+"expect": "setpoint",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
 "size": "3x1"
 }
 }
@@ -3283,6 +3371,17 @@
 "entity": "climate.case",
 "options": {
 "controls": "setpoint_mode",
+"size": "2x3"
+}
+}
+},
+{
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
 "size": "2x3"
 }
 }
@@ -3359,6 +3458,17 @@
 "entity": "climate.case",
 "options": {
 "controls": "setpoint_mode",
+"size": "3x2"
+}
+}
+},
+{
+"expect": "setpoint_preset",
+"kind": "resolve",
+"tile": {
+"entity": "climate.case",
+"options": {
+"controls": "setpoint_preset",
 "size": "3x2"
 }
 }
@@ -4839,6 +4949,488 @@
 "domain": "climate",
 "expect": "setpoint_mode",
 "key": "setpoint_mode",
+"kind": "roomless",
+"size": "3x2"
+},
+{
+"attributes": {},
+"domain": "climate",
+"expect": "setpoint_preset",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {},
+"domain": "climate",
+"expect": "setpoint",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 0
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 0
+},
+"domain": "climate",
+"expect": "none",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 0
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 0
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 0
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8388607
+},
+"domain": "climate",
+"expect": "setpoint_preset",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8388607
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8388607
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8388607
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8388607
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 1,
+"temperature": 21
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 1,
+"temperature": 21
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 1,
+"temperature": 21
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 1,
+"temperature": 21
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 1,
+"temperature": 21
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 2,
+"target_temp_high": 23,
+"target_temp_low": 19
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 2,
+"target_temp_high": 23,
+"target_temp_low": 19
+},
+"domain": "climate",
+"expect": "none",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 2,
+"target_temp_high": 23,
+"target_temp_low": 19
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 2,
+"target_temp_high": 23,
+"target_temp_low": 19
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 2,
+"target_temp_high": 23,
+"target_temp_low": 19
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 3,
+"target_temp_high": 23,
+"target_temp_low": 19,
+"temperature": null
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 3,
+"target_temp_high": 23,
+"target_temp_low": 19,
+"temperature": null
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 3,
+"target_temp_high": 23,
+"target_temp_low": 19,
+"temperature": null
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 3,
+"target_temp_high": 23,
+"target_temp_low": 19,
+"temperature": null
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 3,
+"target_temp_high": 23,
+"target_temp_low": 19,
+"temperature": null
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8
+},
+"domain": "climate",
+"expect": "setpoint",
+"features": null,
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8
+},
+"domain": "climate",
+"expect": "none",
+"features": [],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"climate_range"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"cover_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"attributes": {
+"supported_features": 8
+},
+"domain": "climate",
+"expect": "none",
+"features": [
+"media_rows"
+],
+"key": "setpoint_preset",
+"kind": "drawable"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "single"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "wide"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "tall"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "square"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "full"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "1x1"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "1x3"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "3x1"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
+"kind": "roomless",
+"size": "2x3"
+},
+{
+"domain": "climate",
+"expect": "setpoint_preset",
+"key": "setpoint_preset",
 "kind": "roomless",
 "size": "3x2"
 },

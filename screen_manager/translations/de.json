@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Temperatur − / +",
           "mode": "Modustasten",
-          "setpoint_mode": "Temperatur − / + und Modustasten"
+          "setpoint_mode": "Temperatur − / + und Modustasten",
+          "setpoint_preset": "Temperatur − / + und Voreinstellungstasten"
         },
         "switch": {
           "toggle": "Ein/Aus-Schalter"

@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Temperatuur − / +",
           "mode": "Modusknoppen",
-          "setpoint_mode": "Temperatuur − / + en modusknoppen"
+          "setpoint_mode": "Temperatuur − / + en modusknoppen",
+          "setpoint_preset": "Temperature − / + and preset keys"
         },
         "switch": {
           "toggle": "Aan/uit-schakelaar"

@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Температура − / +",
           "mode": "Кнопки режимов",
-          "setpoint_mode": "Температура − / + и кнопки режимов"
+          "setpoint_mode": "Температура − / + и кнопки режимов",
+          "setpoint_preset": "Temperature − / + and preset keys"
         },
         "switch": {
           "toggle": "Переключатель вкл/выкл"

@@ -2,6 +2,7 @@
 // c++ -std=c++17 -Wall -Wextra -pedantic tests/test_tile_controls.cpp -o /tmp/test_tile_controls && /tmp/test_tile_controls
 #define THEME_TEST
 #include "../components/smart_display/tile_controls.h"
+#include "../components/smart_display/climate_controls.cpp"
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -41,6 +42,19 @@ int main() {
     x.hvac_modes = R"(["heat","off"])"; t.supported = 0; assert(climate_rows(t).size() == 2);
     t.supported = tile_catalogue::climate::PRESET_MODE;
     x.preset_modes = R"(["boost"])"; assert(climate_rows(t).size() == 2);
+    x.preset_modes = R"(["eco","comfort","boost"])";
+    t.controls = "setpoint_preset"; t.state = "off";
+    std::array<Key, 6> presets;
+    assert(climate_modes_selected(t) && panel_kind(t) == "setpoint");
+    assert(climate_bar_keys(t, presets) == 3);
+    assert(presets[0].arg == "eco" && presets[1].arg == "comfort" && presets[2].arg == "off");
+    assert(presets[2].checked && !presets[1].checked);
+    assert(presets[0].command == CLIMATE_PRESET);
+    assert(climate_bar_text(t, "eco") == "Eco" && climate_bar_text(t, "off") == "Off");
+    assert(climate_bar_keys(t, presets, 2) == 2 && presets[1].command == OPEN_CARD);
+    assert(climate_bar_keys(t, presets, 1) == 1 && presets[0].command == OPEN_CARD);
+    t.controls = "setpoint_mode";
+    assert(climate_bar_keys(t, presets) == 0); // heat/off alone still has no HVAC bar
     const auto eco = climate_row_action('p', "eco"), off = climate_row_action('p', "off");
     assert(eco.service == "climate.set_preset_mode" && eco.key == "preset_mode" && eco.value == "eco");
     assert(off.service == "climate.set_hvac_mode" && off.key == "hvac_mode" && off.value == "off");

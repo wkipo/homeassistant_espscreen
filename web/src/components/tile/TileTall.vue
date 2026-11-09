@@ -84,10 +84,10 @@ const standStyle = computed(() => ({ background: `linear-gradient(to top, ${card
         <span v-else-if="card.face.tallKeys.length" class="cover-row"><span v-for="(k, i) in card.face.tallKeys" :key="i" class="key mdi" :class="{ disabled: k.disabled }">{{ card.key(k.icon) }}</span></span>
       </template>
     </CoverTilePreview>
-    <span v-else-if="card.face.thermostat && (card.face.tallControls === 'setpoint' || card.face.tallControls === 'setpoint_mode')" class="tall-setpoint">
+    <span v-else-if="card.face.thermostat && (card.face.tallControls === 'setpoint' || (card.face.tallControls === 'setpoint_mode' || card.face.tallControls === 'setpoint_preset'))" class="tall-setpoint">
       <span class="target"><span class="key mdi">{{ card.key('minus') || '−' }}</span><RangeChip v-if="card.chip" :chip="card.chip" :icon="card.key(card.chip.icon)" /><b v-else>{{ card.texts.setpoint }}</b><span class="key mdi">{{ card.key('plus') || '+' }}</span></span>
       <span class="st">{{ card.texts.now || card.texts.status }}</span>
-      <ModeBar v-if="card.face.tallControls === 'setpoint_mode'" class="ctl modes" :a="card.current?.a || {}" :mode="card.current?.state || ''" :domain="card.domain" place="tall" :columns="card.shape.columns" />
+      <ModeBar :presets="card.face.tallControls === 'setpoint_preset'" v-if="(card.face.tallControls === 'setpoint_mode' || card.face.tallControls === 'setpoint_preset')" class="ctl modes" :a="card.current?.a || {}" :mode="card.current?.state || ''" :domain="card.domain" place="tall" :columns="card.shape.columns" />
     </span>
     <template v-else>
       <span v-if="!card.face.tallAction" class="tall-body">

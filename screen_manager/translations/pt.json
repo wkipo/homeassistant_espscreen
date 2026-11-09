@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Temperatura − / +",
           "mode": "Botões de modo",
-          "setpoint_mode": "Temperatura − / + e botões de modo"
+          "setpoint_mode": "Temperatura − / + e botões de modo",
+          "setpoint_preset": "Temperature − / + and preset keys"
         },
         "switch": {
           "toggle": "Interruptor"

@@ -1039,7 +1039,8 @@
         "climate": {
           "setpoint": "Hőmérséklet − / +",
           "mode": "Módgombok",
-          "setpoint_mode": "Hőmérséklet − / + és módgombok"
+          "setpoint_mode": "Hőmérséklet − / + és módgombok",
+          "setpoint_preset": "Temperature − / + and preset keys"
         },
         "switch": {
           "toggle": "Be/ki kapcsoló"

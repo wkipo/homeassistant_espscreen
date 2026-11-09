@@ -2,7 +2,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'screen_manager/app'))
-from core import state_message, packets
+from core import state_message, packets, drawn_controls
 
 
 def test_preset_attributes_follow_home_assistant():
@@ -22,3 +22,13 @@ def test_absent_presets_are_not_invented():
     message = state_message(0, tile, {'climate.room': {'state': 'heat', 'attributes': {}}})
     assert 'preset_mode' not in message['a']
     assert 'preset_modes' not in message['a']
+
+
+def test_new_tile_control_is_gated_by_firmware_capability():
+    tile = {'entity': 'climate.room', 'name': '', 'options': {'size': 'square', 'controls': 'setpoint_preset'}}
+    states = {'climate.room': {'state': 'heat', 'attributes': {'supported_features': 401,
+              'temperature': 22, 'preset_modes': ['eco', 'comfort'], 'preset_mode': 'eco'}}}
+    message = state_message(0, tile, states)
+    assert drawn_controls(message, features=frozenset())['o']['controls'] == 'setpoint'
+    message = state_message(0, tile, states)
+    assert drawn_controls(message, features=frozenset({'climate_presets'}))['o']['controls'] == 'setpoint_preset'
